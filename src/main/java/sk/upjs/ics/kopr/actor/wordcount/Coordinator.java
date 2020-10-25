@@ -6,9 +6,13 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.PoolRouter;
 import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.Routers;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Coordinator extends AbstractBehavior<Coordinator.Command> {
@@ -26,9 +30,13 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
 
     private Coordinator(ActorContext<Command> context, int remainingSentences) {
         super(context);
-        this.worker = context.spawn(SentenceFrequencyCounter.create(), "frequency-counter");
+        this.worker = context.spawn(workerPool(), "frequency-counter");
         this.messageAdapter = context.messageAdapter(SentenceFrequencyCounter.Frequencies.class, frequencies -> new AggregateFrequencies(frequencies.getFrequencies()));
         this.remainingSentences = remainingSentences;
+    }
+
+    private PoolRouter<SentenceFrequencyCounter.Sentence> workerPool() {
+        return Routers.pool(3, SentenceFrequencyCounter.create());
     }
 
     @Override
@@ -84,10 +92,19 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
 
     // --------------------------------
     public static void main(String[] args) {
-        int remainingSentences = 2;
+        List<String> sentences = Arrays.asList("The quick brown fox tried to jump over the lazy dog and fell on the dog",
+                "Dog is man's best friend",
+                "Dog and Fox belong to the same family",
+                "The dog was the first domesticated species",
+                "The origin of the domestic dog is not clear");
+
+        int remainingSentences = sentences.size();
         ActorSystem<Coordinator.Command> system = ActorSystem.create(Coordinator.create(remainingSentences), "system");
-        system.tell(new CalculateFrequencies("zlom dobro zlom"));
-        system.tell(new CalculateFrequencies("dobro zvitazi nad zlom"));
+
+        for (String sentence : sentences) {
+            system.tell(new CalculateFrequencies(sentence));
+        }
+
     }
 
 }
