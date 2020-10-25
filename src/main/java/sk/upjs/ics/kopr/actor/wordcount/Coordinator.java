@@ -52,7 +52,7 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
 
         this.remainingSentences--;
         if (this.remainingSentences == 0) {
-            System.out.println(this.allFrequencies);
+            getContext().getLog().info("[{}] Frequencies: {}", getContext().getSelf(), this.allFrequencies);
             return Behaviors.stopped();
         }
         return this;

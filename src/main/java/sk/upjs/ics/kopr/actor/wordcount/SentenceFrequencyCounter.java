@@ -33,7 +33,7 @@ public class SentenceFrequencyCounter extends AbstractBehavior<SentenceFrequency
         Map<String, Long> frequencies = Stream.of(sentence.getSentence().split("\\s"))
                 .collect(Collectors.groupingBy(String::toString, Collectors.counting()));
 
-        System.out.println(getContext().getSelf() + " Calculated " + frequencies);
+        getContext().getLog().info("[{}] Worker Frequencies: {}", getContext().getSelf(), frequencies);
 
         sentence.replyTo.tell(new Frequencies(frequencies));
 
