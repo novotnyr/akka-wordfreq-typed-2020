@@ -29,7 +29,13 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
     public Receive<Coordinator.Command> createReceive() {
         return newReceiveBuilder()
                 .onMessage(CalculateFrequencies.class, this::calculateFrequencies)
+                .onMessage(AggregateFrequencies.class, this::aggregateFrequencies)
                 .build();
+    }
+
+    private Behavior<Command> aggregateFrequencies(AggregateFrequencies command) {
+        System.out.println(command.getFrequencies());
+        return Behaviors.same();
     }
 
     private Behavior<Coordinator.Command> calculateFrequencies(CalculateFrequencies command) {
@@ -58,12 +64,17 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
         public AggregateFrequencies(Map<String, Long> frequencies) {
             this.frequencies = frequencies;
         }
+
+        public Map<String, Long> getFrequencies() {
+            return frequencies;
+        }
     }
 
     // --------------------------------
     public static void main(String[] args) {
         ActorSystem<Coordinator.Command> system = ActorSystem.create(Coordinator.create(), "system");
         system.tell(new CalculateFrequencies("zlom dobro zlom"));
+        system.tell(new CalculateFrequencies("dobro zvitazi nad zlom"));
     }
 
 }
