@@ -18,14 +18,17 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
 
     private final Map<String, Long> allFrequencies = new HashMap<>();
 
-    public static Behavior<Coordinator.Command> create() {
-        return Behaviors.setup(Coordinator::new);
+    private int remainingSentences = 0;
+
+    public static Behavior<Coordinator.Command> create(int remainingSentences) {
+        return Behaviors.setup(context -> new Coordinator(context, remainingSentences));
     }
 
-    private Coordinator(ActorContext<Coordinator.Command> context) {
+    private Coordinator(ActorContext<Command> context, int remainingSentences) {
         super(context);
         this.worker = context.spawn(SentenceFrequencyCounter.create(), "frequency-counter");
         this.messageAdapter = context.messageAdapter(SentenceFrequencyCounter.Frequencies.class, frequencies -> new AggregateFrequencies(frequencies.getFrequencies()));
+        this.remainingSentences = remainingSentences;
     }
 
     @Override
@@ -38,7 +41,12 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
 
     private Behavior<Command> aggregateFrequencies(AggregateFrequencies command) {
         MapUtils.aggregateInto(this.allFrequencies, command.getFrequencies());
-        System.out.println(this.allFrequencies);
+
+        this.remainingSentences--;
+        if (this.remainingSentences == 0) {
+            System.out.println(this.allFrequencies);
+            return Behaviors.stopped();
+        }
         return this;
     }
 
@@ -76,7 +84,8 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
 
     // --------------------------------
     public static void main(String[] args) {
-        ActorSystem<Coordinator.Command> system = ActorSystem.create(Coordinator.create(), "system");
+        int remainingSentences = 2;
+        ActorSystem<Coordinator.Command> system = ActorSystem.create(Coordinator.create(remainingSentences), "system");
         system.tell(new CalculateFrequencies("zlom dobro zlom"));
         system.tell(new CalculateFrequencies("dobro zvitazi nad zlom"));
     }
