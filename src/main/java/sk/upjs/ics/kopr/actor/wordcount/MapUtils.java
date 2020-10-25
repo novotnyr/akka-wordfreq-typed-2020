@@ -16,4 +16,14 @@ public class MapUtils {
         }
         return aggregatedData;
     }
+
+    public static <T> void aggregateInto(Map<T, Long> aggregatedData, Map<T, Long> data2) {
+        for (T key : data2.keySet()) {
+            long existingFrequency = 0;
+            if (aggregatedData.containsKey(key)) {
+                existingFrequency = aggregatedData.get(key);
+            }
+            aggregatedData.put(key, existingFrequency + data2.get(key));
+        }
+    }
 }

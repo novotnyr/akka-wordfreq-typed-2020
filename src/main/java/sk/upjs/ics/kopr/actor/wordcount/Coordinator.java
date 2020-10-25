@@ -8,12 +8,15 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class Coordinator extends AbstractBehavior<Coordinator.Command> {
     private ActorRef<SentenceFrequencyCounter.Sentence> worker;
 
     private ActorRef<SentenceFrequencyCounter.Frequencies> messageAdapter;
+
+    private final Map<String, Long> allFrequencies = new HashMap<>();
 
     public static Behavior<Coordinator.Command> create() {
         return Behaviors.setup(Coordinator::new);
@@ -34,8 +37,9 @@ public class Coordinator extends AbstractBehavior<Coordinator.Command> {
     }
 
     private Behavior<Command> aggregateFrequencies(AggregateFrequencies command) {
-        System.out.println(command.getFrequencies());
-        return Behaviors.same();
+        MapUtils.aggregateInto(this.allFrequencies, command.getFrequencies());
+        System.out.println(this.allFrequencies);
+        return this;
     }
 
     private Behavior<Coordinator.Command> calculateFrequencies(CalculateFrequencies command) {
