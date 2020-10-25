@@ -47,6 +47,19 @@ public class SentenceFrequencyCounter extends AbstractBehavior<SentenceFrequency
         }
     }
 
+
+    public static class Frequencies {
+        private final Map<String, Long> frequencies;
+
+        public Frequencies(Map<String, Long> frequencies) {
+            this.frequencies = frequencies;
+        }
+
+        public Map<String, Long> getFrequencies() {
+            return frequencies;
+        }
+    }
+
     // --------------------------------
     public static void main(String[] args) {
         ActorSystem<Sentence> system = ActorSystem.create(SentenceFrequencyCounter.create(), "system");
