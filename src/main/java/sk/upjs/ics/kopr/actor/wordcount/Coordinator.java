@@ -1,5 +1,7 @@
 package sk.upjs.ics.kopr.actor.wordcount;
 
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
@@ -8,23 +10,31 @@ import akka.actor.typed.javadsl.Receive;
 
 import java.util.Map;
 
-public class Coordinator extends AbstractBehavior<Coordinator.CalculateFrequencies> {
-    public static Behavior<CalculateFrequencies> create() {
+public class Coordinator extends AbstractBehavior<Coordinator.Command> {
+    private ActorRef<SentenceFrequencyCounter.Sentence> worker;
+
+    private ActorRef<SentenceFrequencyCounter.Frequencies> messageAdapter;
+
+    public static Behavior<Coordinator.Command> create() {
         return Behaviors.setup(Coordinator::new);
     }
 
-    private Coordinator(ActorContext<CalculateFrequencies> context) {
+    private Coordinator(ActorContext<Coordinator.Command> context) {
         super(context);
+        this.worker = context.spawn(SentenceFrequencyCounter.create(), "frequency-counter");
+        this.messageAdapter = context.messageAdapter(SentenceFrequencyCounter.Frequencies.class, frequencies -> new AggregateFrequencies(frequencies.getFrequencies()));
     }
 
     @Override
-    public Receive<CalculateFrequencies> createReceive() {
+    public Receive<Coordinator.Command> createReceive() {
         return newReceiveBuilder()
                 .onMessage(CalculateFrequencies.class, this::calculateFrequencies)
                 .build();
     }
 
-    private Behavior<CalculateFrequencies> calculateFrequencies(CalculateFrequencies frequencies) {
+    private Behavior<Coordinator.Command> calculateFrequencies(CalculateFrequencies command) {
+        SentenceFrequencyCounter.Sentence sentence = new SentenceFrequencyCounter.Sentence(command.getSentence(), messageAdapter);
+        this.worker.tell(sentence);
         return this;
     }
 
@@ -49,4 +59,11 @@ public class Coordinator extends AbstractBehavior<Coordinator.CalculateFrequenci
             this.frequencies = frequencies;
         }
     }
+
+    // --------------------------------
+    public static void main(String[] args) {
+        ActorSystem<Coordinator.Command> system = ActorSystem.create(Coordinator.create(), "system");
+        system.tell(new CalculateFrequencies("zlom dobro zlom"));
+    }
+
 }
