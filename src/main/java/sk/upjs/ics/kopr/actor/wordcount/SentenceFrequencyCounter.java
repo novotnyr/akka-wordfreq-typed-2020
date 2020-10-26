@@ -30,6 +30,10 @@ public class SentenceFrequencyCounter extends AbstractBehavior<SentenceFrequency
     }
 
     private Behavior<Sentence> calculateFrequencies(Sentence sentence) {
+        if (Math.random() < 0.5) {
+            throw new IllegalStateException("Counter failed");
+        }
+
         Map<String, Long> frequencies = Stream.of(sentence.getSentence().split("\\s"))
                 .collect(Collectors.groupingBy(String::toString, Collectors.counting()));
 
